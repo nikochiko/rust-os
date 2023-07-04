@@ -13,14 +13,12 @@ pub extern "C" fn _start() -> ! {
 
     rust_os::init();
 
-    x86_64::instructions::interrupts::int3();
-
     #[cfg(test)]
     test_main();
 
-    println!("After breakpoint");
+    println!("It did not crash");
 
-    loop {}
+    rust_os::hlt_loop()
 }
 
 #[cfg(not(test))]
@@ -28,7 +26,7 @@ pub extern "C" fn _start() -> ! {
 fn panic(info: &PanicInfo) -> ! {
     println!("{}", info);
 
-    loop {}
+    rust_os::hlt_loop()
 }
 
 #[cfg(test)]
