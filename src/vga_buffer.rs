@@ -112,6 +112,17 @@ impl Writer {
         }
     }
 
+    pub unsafe fn write_full_screen(&mut self, s: [[u8; 80]; 25]) {
+        for row in 0..25 as usize {
+            for col in 0..80 as usize {
+                self.buffer.chars[row][col].write(ScreenChar {
+                    ascii_character: s[row][col],
+                    color_code: self.color_code,
+                });
+            }
+        }
+    }
+
     #[allow(dead_code)]
     pub fn init(&mut self) {
         // sets the default background color for the console by
@@ -120,6 +131,7 @@ impl Writer {
             self.clear_row(row_index);
         }
     }
+
 }
 
 impl fmt::Write for Writer {

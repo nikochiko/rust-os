@@ -12,6 +12,7 @@ pub mod vga_buffer;
 pub mod serial;
 pub mod interrupts;
 pub mod gdt;
+pub mod game;
 
 pub trait Testable {
     fn run(&self) -> ();
@@ -77,6 +78,14 @@ pub fn hlt_loop() -> ! {
     loop {
         x86_64::instructions::hlt()
     }
+}
+
+pub fn get_random_u32() -> u32 {
+    use x86_64::instructions::port::Port;
+
+    let mut port = Port::new(0x40);
+    let result: u32 = unsafe { port.read() };
+    result
 }
 
 pub fn init() {
