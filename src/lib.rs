@@ -13,6 +13,7 @@ pub mod serial;
 pub mod interrupts;
 pub mod gdt;
 pub mod game;
+pub mod fmt;
 
 pub trait Testable {
     fn run(&self) -> ();

@@ -1,5 +1,5 @@
 use spin;
-use crate::{print, vga_buffer, get_random_u32};
+use crate::{print, vga_buffer, get_random_u32, fmt::ByteArrayWriter};
 use pc_keyboard::{KeyEvent, KeyCode, KeyState};
 use lazy_static::lazy_static;
 use x86_64::instructions::interrupts::without_interrupts;
@@ -10,12 +10,16 @@ pub const MAX_SNAKE_LENGTH: u32 = 100;
 pub const SNAKE_START_ROW: u32 = 11;
 pub const SNAKE_START_COLUMN: u32 = 0;
 pub const SNAKE_START_LENGTH: u32 = 3;
-pub const GAME_ROWS: u32 = 23;
+pub const GAME_ROWS: u32 = 17;
 pub const GAME_COLUMNS: u32 = 24;
 pub const GAME_LEFT_BORDER: u32 = (DISPLAY_COLUMNS - GAME_COLUMNS) / 2;
 pub const GAME_RIGHT_BORDER: u32 = DISPLAY_COLUMNS - GAME_LEFT_BORDER;
 pub const GAME_TOP_BORDER: u32 = (DISPLAY_ROWS - GAME_ROWS) / 2;
 pub const GAME_BOTTOM_BORDER: u32 = DISPLAY_ROWS - GAME_TOP_BORDER;
+pub const GAME_SCORE_ROW_INDEX: u32 = GAME_TOP_BORDER - 1; // 0-indexed
+pub const GAME_SCORE_COLUMN_INDEX: u32 = GAME_LEFT_BORDER + GAME_ROWS / 2;
+pub const GAME_SCORE_TEXT_WIDTH: u32 = " SCORE: ".len() as u32 + 5;
+pub const GAME_SCORE_PADDING_CHARACTER: u8 = b' ';
 
 lazy_static! {
     pub static ref GAME: spin::Mutex<Game> = spin::Mutex::new(Game::new());
@@ -248,6 +252,10 @@ impl Game {
         }
     }
 
+    pub fn score(&self) -> u32 {
+        self.snake.length
+    }
+
     fn print(&self) {
         let snake_head = self.snake.head();
         let mut array: [[u8; DISPLAY_COLUMNS as usize]; DISPLAY_ROWS as usize] =
@@ -268,6 +276,24 @@ impl Game {
                         array[row as usize][column as usize] = b'#';
                     }
                 }
+            }
+        }
+
+        // draw score
+        {
+            let column_span = GAME_SCORE_COLUMN_INDEX as usize..(GAME_SCORE_COLUMN_INDEX+GAME_SCORE_TEXT_WIDTH) as usize;
+            let score_text_slice = &mut array[GAME_SCORE_ROW_INDEX as usize][column_span];
+
+            // clear the cells
+            for i in 0..GAME_SCORE_TEXT_WIDTH {
+                score_text_slice[i as usize] = GAME_SCORE_PADDING_CHARACTER;
+            }
+
+            use core::fmt::Write;
+            let mut writer = ByteArrayWriter::new([0; 1024]);
+            writer.write_fmt(format_args!(" SCORE: {}", self.score())).unwrap();
+            for (i, &byte) in writer.bytes().iter().enumerate() {
+                score_text_slice[i as usize] = byte;
             }
         }
 
