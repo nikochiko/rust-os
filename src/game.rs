@@ -4,12 +4,18 @@ use pc_keyboard::{KeyEvent, KeyCode, KeyState};
 use lazy_static::lazy_static;
 use x86_64::instructions::interrupts::without_interrupts;
 
+pub const DISPLAY_ROWS: u32 = 25;
+pub const DISPLAY_COLUMNS: u32 = 80;
 pub const MAX_SNAKE_LENGTH: u32 = 100;
 pub const SNAKE_START_ROW: u32 = 11;
 pub const SNAKE_START_COLUMN: u32 = 0;
 pub const SNAKE_START_LENGTH: u32 = 3;
 pub const GAME_ROWS: u32 = 23;
-pub const GAME_COLUMNS: u32 = 78;
+pub const GAME_COLUMNS: u32 = 24;
+pub const GAME_LEFT_BORDER: u32 = (DISPLAY_COLUMNS - GAME_COLUMNS) / 2;
+pub const GAME_RIGHT_BORDER: u32 = DISPLAY_COLUMNS - GAME_LEFT_BORDER;
+pub const GAME_TOP_BORDER: u32 = (DISPLAY_ROWS - GAME_ROWS) / 2;
+pub const GAME_BOTTOM_BORDER: u32 = DISPLAY_ROWS - GAME_TOP_BORDER;
 
 lazy_static! {
     pub static ref GAME: spin::Mutex<Game> = spin::Mutex::new(Game::new());
@@ -244,16 +250,25 @@ impl Game {
 
     fn print(&self) {
         let snake_head = self.snake.head();
-        let mut array: [[u8; 80]; 25] = [[b' '; 80]; 25];
+        let mut array: [[u8; DISPLAY_COLUMNS as usize]; DISPLAY_ROWS as usize] =
+            [[b' '; DISPLAY_COLUMNS as usize]; DISPLAY_ROWS as usize];
 
         // draw border
-        for column in 0..80 {
-            array[0][column] = b'#';
-            array[24][column] = b'#';
-        }
-        for row in 0..25 {
-            array[row][0] = b'#';
-            array[row][79] = b'#';
+        {
+            let top_border_rows = 0..GAME_TOP_BORDER;
+            let bottom_border_rows = DISPLAY_ROWS-GAME_BOTTOM_BORDER..DISPLAY_ROWS;
+            let left_border_columns = 0..GAME_LEFT_BORDER;
+            let right_border_columns = DISPLAY_COLUMNS-GAME_RIGHT_BORDER..DISPLAY_COLUMNS;
+
+            for row in 0..DISPLAY_ROWS {
+                for column in 0..DISPLAY_COLUMNS {
+                    if top_border_rows.contains(&row) || bottom_border_rows.contains(&row) ||
+                       left_border_columns.contains(&column) || right_border_columns.contains(&column)
+                    {
+                        array[row as usize][column as usize] = b'#';
+                    }
+                }
+            }
         }
 
         // draw inner
@@ -276,7 +291,7 @@ impl Game {
                         b' '
                     }
                 };
-                array[(row+1) as usize][(column+1) as usize] = character;
+                array[(row+GAME_TOP_BORDER) as usize][(column+GAME_LEFT_BORDER) as usize] = character;
             }
         }
 
